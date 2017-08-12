@@ -1,18 +1,18 @@
-import os
-import sys
+from copy import copy
+
+from IPython.core.display import display
+from ipywidgets import HTML
+from pandas import DataFrame
 
 from chainer.training import extension
 from chainer.training.extensions import log_report as log_report_module
-from chainer.training.extensions import util
 
 
 class PrintReport(extension.Extension):
 
     """Trainer extension to print the accumulated results.
-
     This extension uses the log accumulated by a :class:`LogReport` extension
     to print specified entries of the log in a human-readable format.
-
     Args:
         entries (list of str): List of keys of observations to print.
         log_report (str or LogReport): Log report to accumulate the
@@ -20,35 +20,21 @@ class PrintReport(extension.Extension):
             registered to the trainer, or a LogReport instance to use
             internally.
         out: Stream to print the bar. Standard output is used by default.
-
     """
 
-    def __init__(self, entries, log_report='LogReport', out=sys.stdout):
+    def __init__(self, entries, log_report='LogReport'):
         self._entries = entries
         self._log_report = log_report
-        self._out = out
 
-        self._log_len = 0  # number of observations already printed
+        self._default_row = dict((e, None) for e in entries)
+        self._widget = HTML()
+        self.count = 0
+        self.update([])
 
-        # format information
-        entry_widths = [max(10, len(s)) for s in entries]
-
-        header = '  '.join(('{:%d}' % w for w in entry_widths)).format(
-            *entries) + '\n'
-        self._header = header  # printed at the first call
-
-        templates = []
-        for entry, w in zip(entries, entry_widths):
-            templates.append((entry, '{:<%dg}  ' % w, ' ' * (w + 2)))
-        self._templates = templates
+    def initialize(self, trainer):
+        display(self._widget)
 
     def __call__(self, trainer):
-        out = self._out
-
-        if self._header:
-            out.write(self._header)
-            self._header = None
-
         log_report = self._log_report
         if isinstance(log_report, str):
             log_report = trainer.get_extension(log_report)
@@ -58,28 +44,35 @@ class PrintReport(extension.Extension):
             raise TypeError('log report has a wrong type %s' %
                             type(log_report))
 
-        log = log_report.log
-        log_len = self._log_len
-        while len(log) > log_len:
-            # delete the printed contents from the current cursor
-            if os.name == 'nt':
-                util.erase_console(0, 0)
-            else:
-                out.write('\033[J')
-            self._print(log[log_len])
-            log_len += 1
-        self._log_len = log_len
+        self.update(log_report.log)
+
+    @property
+    def widget(self):
+        return self._widget
+
+    def update(self, log):
+        df = DataFrame(columns=self._entries)
+
+        for stat in log:
+            stat = copy(stat)
+            stat['epoch'] = int(stat['epoch'])
+            stat['iteration'] = int(stat['iteration'])
+
+            d = {}
+            for k in self._entries:
+                if k in stat:
+                    d[k] = stat[k]
+                else:
+                    d[k] = None
+            df = df.append(d, ignore_index=True)
+
+        if 'epoch' in df:
+            df['epoch'] = df['epoch'].astype(int)
+        if 'iteration' in df:
+            df['iteration'] = df['iteration'].astype(int)
+        self._widget.value = df.to_html(index=False, na_rep='')
 
     def serialize(self, serializer):
         log_report = self._log_report
         if isinstance(log_report, log_report_module.LogReport):
             log_report.serialize(serializer['_log_report'])
-
-    def _print(self, observation):
-        out = self._out
-        for entry, template, empty in self._templates:
-            if entry in observation:
-                out.write(template.format(observation[entry]))
-            else:
-                out.write(empty)
-        out.write('\n')
