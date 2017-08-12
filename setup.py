@@ -5,7 +5,7 @@ setup(
     name='chaineripy',
     version='0.1',
     description='IPython integration of Chainer',
-    url='',
+    url='https://github.com/grafi-tt/chaineripy',
     author='Shunsuke Shimizu',
     author_email='grafi@grafi.jp',
     license='MIT',
