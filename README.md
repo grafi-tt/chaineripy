@@ -51,10 +51,10 @@ even if you don't use `Trainer` or `Updater`.
 
 ## CONTRIBUTION
 
-Contributions are highly welcomed, including but not limited to:
+Contributions are very welcome, including but not limited to:
 new widgets or features, bug fixes, documents improvements, and aesthetic improvements.
 
-Adding codes that work on plain terminal or other IPython consoles are welcomed, but
-I won't support dynamic detection of the type of console you are working on.
-If you can't write console neutral code, please create modules supporting
-the same API for different consoles, and let user choose the appropriate module.
+Adding codes that work on both of plain terminal and other IPython consoles are
+much welcomed, but I WON'T support dynamic detection of the type of current console.
+If you couldn't write console neutral code, please create modules for each console
+supporting the same API, and let users choose the appropriate module.
