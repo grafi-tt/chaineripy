@@ -26,7 +26,7 @@ from chainer.training.extensions import PrintReport, ProgressBar
 by
 
 ```python
-from ipychainer.extensions import PrintReport, ProgressBar
+from chaineripy.extensions import PrintReport, ProgressBar
 ```
 
 when you run Chainer on a IPython notebook.
